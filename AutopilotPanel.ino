@@ -8,7 +8,6 @@ typedef struct Element {
   const char* name;
   const char id;
   i2cEncoderMiniLib encoder;
-  Adafruit_7segment display;
   byte display_address;
   long min;
   long max;
@@ -17,18 +16,19 @@ typedef struct Element {
   bool initialised;
   long disp_val;
   long sent_val;
+  Adafruit_7segment display;
 } Element;
 
-#define ELEMENTS 4
+#define ELEMENTS 5
 
 bool connected = false;
 
 Element elements[] = {
-  {"Heading", 'H', i2cEncoderMiniLib(0x20), Adafruit_7segment(), 0x70, 0, 359, 1, i2cEncoderMiniLib::WRAP_ENABLE},
-  {"Altitude", 'A', i2cEncoderMiniLib(0x21), Adafruit_7segment(), 0x71, 0, 600, 1, i2cEncoderMiniLib::WRAP_DISABLE},
-  {"Speed", 'S', i2cEncoderMiniLib(0x22), Adafruit_7segment(), 0x72, 0, 1000, 1, i2cEncoderMiniLib::WRAP_DISABLE},
-  {"QNH", 'Q', i2cEncoderMiniLib(0x23), Adafruit_7segment(), 0x73, 2600, 3100, 1, i2cEncoderMiniLib::WRAP_DISABLE},
-  //{"VSpeed", 'V', i2cEncoderMiniLib(0x24), Adafruit_7segment(), 0x74, 2800, 3100, 1},
+  {"Heading °", 'H', i2cEncoderMiniLib(0x20), 0x70, 0, 359, 1, i2cEncoderMiniLib::WRAP_ENABLE},
+  {"Altitude ft", 'A', i2cEncoderMiniLib(0x21), 0x71, 0, 600, 1, i2cEncoderMiniLib::WRAP_DISABLE},
+  {"Speed kn", 'S', i2cEncoderMiniLib(0x22), 0x72, 0, 1000, 1, i2cEncoderMiniLib::WRAP_DISABLE},
+  {"QNH mmHg", 'Q', i2cEncoderMiniLib(0x23), 0x73, 2600, 3100, 1, i2cEncoderMiniLib::WRAP_DISABLE},
+  {"VSpeed 10 fpm", 'V', i2cEncoderMiniLib(0x24), 0x74, -800, 600, 5, i2cEncoderMiniLib::WRAP_DISABLE},
 };
 
 void setup() {
@@ -38,7 +38,7 @@ void setup() {
   for (int i=0; i<ELEMENTS; i++) {
     Element &e = elements[i];
     e.initialised = false;
-    e.display.begin(elements[i].display_address);
+    e.display.begin(e.display_address);
     e.display.printError();
     e.display.writeDisplay();
     setup_encoder(e);
@@ -67,7 +67,7 @@ void connect() {
 
       for (int i=0; i<ELEMENTS; i++) {
         Element &e = elements[i];
-        e.display.print(elements[i].disp_val);
+        e.display.print(e.disp_val);
         e.display.writeDisplay();
       }
     }

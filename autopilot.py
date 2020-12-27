@@ -11,6 +11,9 @@ speed = None
 vspeed = None
 qnh = None
 
+
+
+
 def connect_sim(sc):
 	try:
 		sc.connect()
@@ -49,7 +52,7 @@ def read_speed():
 
 def read_vspeed():
 	global vspeed
-	vspeed = read_val('AUTOPILOT_VERTICAL_HOLD_VAR', 'V', vspeed)
+	vspeed = read_val('AUTOPILOT_VERTICAL_HOLD_VAR', 'V', vspeed, lambda x: x / 10)
 
 def read_qnh():
 	global qnh
@@ -80,7 +83,7 @@ def update_speed(data):
 
 def update_vspeed(data):
 	global vspeed
-	vspeed = update_val(data, vspeed, 'AP_VS_VAR_SET_ENGLISH')
+	vspeed = update_val(data, vspeed, 'AP_VS_VAR_SET_ENGLISH', lambda x: x * 10)
 
 def update_qnh(data):
 	global qnh
@@ -93,6 +96,7 @@ def update_val(data, val, event, modifier = lambda x: x):
 	print(f'Updating #{event} from #{val} to #{new_val}')
 	if (new_val != val):
 		sim_val = modifier(new_val)
+		print(f'sim_val: #{sim_val}')
 		e = ae.find(event)
 		e(sim_val)
 	return new_val
