@@ -39,7 +39,6 @@ def connect_serial():
 	ser.flush()
 	b = ser.read()
 	if b != b'C':
-		print(b)
 		connect_serial()
 
 

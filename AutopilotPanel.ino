@@ -24,11 +24,12 @@ typedef struct Element {
 bool connected = false;
 
 Element elements[] = {
-  {"Heading °", 'H', i2cEncoderMiniLib(0x20), 0x70, 0, 359, 1, i2cEncoderMiniLib::WRAP_ENABLE},
-  {"Altitude ft", 'A', i2cEncoderMiniLib(0x21), 0x71, 0, 600, 1, i2cEncoderMiniLib::WRAP_DISABLE},
-  {"Speed kn", 'S', i2cEncoderMiniLib(0x22), 0x72, 0, 1000, 1, i2cEncoderMiniLib::WRAP_DISABLE},
-  {"QNH mmHg", 'Q', i2cEncoderMiniLib(0x23), 0x73, 2600, 3100, 1, i2cEncoderMiniLib::WRAP_DISABLE},
-  {"VSpeed 10 fpm", 'V', i2cEncoderMiniLib(0x24), 0x74, -800, 600, 5, i2cEncoderMiniLib::WRAP_DISABLE},
+  // Name           ID   RE address               LED   Min   Max   Inc Wrap
+  {"QNH mmHg",      'Q', i2cEncoderMiniLib(0x20), 0x70, 2600, 3100, 1,  i2cEncoderMiniLib::WRAP_DISABLE},
+  {"Heading °",     'H', i2cEncoderMiniLib(0x23), 0x72, 0,    359,  1,  i2cEncoderMiniLib::WRAP_ENABLE},
+  {"Altitude ft",   'A', i2cEncoderMiniLib(0x24), 0x71, 0,    600,  1,  i2cEncoderMiniLib::WRAP_DISABLE},
+  {"Speed kn",      'S', i2cEncoderMiniLib(0x22), 0x73, 0,    1000, 1,  i2cEncoderMiniLib::WRAP_DISABLE},
+  {"VSpeed 10 fpm", 'V', i2cEncoderMiniLib(0x21), 0x74, -800, 600,  5,  i2cEncoderMiniLib::WRAP_DISABLE},
 };
 
 void setup() {
