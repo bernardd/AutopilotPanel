@@ -17,6 +17,7 @@ typedef struct Element {
   bool initialised;
   long disp_val;
   long sent_val;
+  bool pressed;
   Adafruit_7segment display;
 } Element;
 
@@ -117,6 +118,16 @@ void read_inputs() {
       Serial.print(e.id);
       Serial.println(val);
       e.sent_val = val;
+    }
+
+    if (e.encoder.updateStatus()) {
+      if (e.pressed && e.encoder.readStatus(i2cEncoderMiniLib::PUSHR)) {
+        e.pressed = false;
+      } else if (!e.pressed && e.encoder.readStatus(i2cEncoderMiniLib::PUSHP)) {
+        e.pressed = true;
+        Serial.print(e.id);
+        Serial.println('P');
+      }
     }
   }
   Serial.flush();

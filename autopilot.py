@@ -1,4 +1,5 @@
 import logging
+import math
 import serial
 import time
 
@@ -10,19 +11,22 @@ from typing import Callable
 class Element:
 	name: str
 	id: str
-	var: str # Value as read from the serial wire
+	var: str
 	event: str
+	set_from: str = ''
 	read_modifier: Callable[[int], int] = lambda x: x
 	update_modifier: Callable[[int], int] = lambda x: x
-	val: int = None
+	set_from_modifier: Callable[[float], int] = lambda x: x
+	val: int = None # Value as read from the serial wire
 
 elements = [
-	Element('Heading', 'H', 'AUTOPILOT_HEADING_LOCK_DIR', 'HEADING_BUG_SET'),
-	Element('Altitude', 'A', 'AUTOPILOT_ALTITUDE_LOCK_VAR', 'AP_ALT_VAR_SET_ENGLISH', lambda x: x/100, lambda x: x*100),
-	Element('Speed', 'S', 'AUTOPILOT_AIRSPEED_HOLD_VAR', 'AP_SPD_VAR_SET'),
-	Element('Vertical Speed', 'V', 'AUTOPILOT_VERTICAL_HOLD_VAR', 'AP_VS_VAR_SET_ENGLISH', lambda x: x/10, lambda x: x*10),
-	# MS's baro, which is only displayed in INHg, is of course in units of 1/16th of a millibar in the API
-	Element('QNH', 'Q', 'KOHLSMAN_SETTING_HG', 'KOHLSMAN_SET', lambda x: x*100, lambda x: round(((x / 100) * 33.864) * 16)),
+	#		  Name					ID	  Variable								Event								set_from									read_modifier		update_modifier   set_from_modifier
+	Element('Heading', 			'H', 'AUTOPILOT_HEADING_LOCK_DIR', 	'HEADING_BUG_SET',			'PLANE_HEADING_DEGREES_TRUE',    lambda x: x,		lambda x: x, 		lambda x: math.degrees(x)),
+	Element('Altitude', 			'A', 'AUTOPILOT_ALTITUDE_LOCK_VAR', 'AP_ALT_VAR_SET_ENGLISH', 	'PLANE_ALTITUDE',						lambda x: x/100, 	lambda x: x*100,  lambda x: x/100),
+	Element('Speed', 				'S', 'AUTOPILOT_AIRSPEED_HOLD_VAR', 'AP_SPD_VAR_SET',				'AIRSPEED_INDICATED'),
+	Element('Vertical Speed', 	'V', 'AUTOPILOT_VERTICAL_HOLD_VAR', 'AP_VS_VAR_SET_ENGLISH', 	'', 										lambda x: x/10, 	lambda x: x*10),
+	# MSFS's baro, which is only displayed in INHg, is of course in units of 1/16th of a millibar in the API. Because obviously.
+	Element('QNH', 				'Q', 'KOHLSMAN_SETTING_HG', 			'KOHLSMAN_SET', 				'', 										lambda x: x*100, 	lambda x: round(((x / 100) * 33.864) * 16)),
 ]
 
 # Setup
@@ -45,9 +49,9 @@ def connect_serial():
 # Incoming from sim
 def read_state():
 	for e in elements:
-		e.val = read_val(e.var, e.id, e.val, e.read_modifier)
+		e.val = read_from_sim_update_panel(e.var, e.id, e.val, e.read_modifier)
 
-def read_val(var, id, val, modifier):
+def read_from_sim_update_panel(var, id, val, modifier):
 	new_val = ar.get(var)
 	if new_val == None:
 		return val
@@ -66,22 +70,28 @@ def handle_data(data):
 	success = False
 	for e in elements:
 		if cmd == e.id:
-			e.val = update_val(data, e.val, e.event, e.update_modifier)
+			if data[1] == 'P':
+				val = read_from_sim_update_panel(e.set_from, e.id, e.val, e.set_from_modifier)
+			else:
+				val = read_from_panel(data, e.val)
+			e.val = update_sim_val(val, e.val, e.event, e.update_modifier)
 			success = True
 			break
 
 	if not success:
 		print(f'Unknown command: #{cmd}')
 
-def update_val(data, val, event, modifier):
+def read_from_panel(data, event):
 	new_val = int(data[1:])
-	print(f'Updating #{event} from #{val} to #{new_val}')
-	if (new_val != val):
+	return new_val
+
+def update_sim_val(new_val, curr_val, event, modifier):
+	print(f'Updating #{event} from #{curr_val} to #{new_val}')
+	if (new_val != curr_val):
 		sim_val = modifier(new_val)
 		e = ae.find(event)
 		e(sim_val)
 	return new_val
-
 
 # Main
 ser = serial.Serial(port='COM3', baudrate=115200, timeout=0.2)
