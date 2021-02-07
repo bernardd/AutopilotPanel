@@ -1,8 +1,11 @@
 #include "Adafruit_LEDBackpack.h"
 #include <i2cEncoderMiniLib.h>
+#include <DebounceEvent.h>
 
 #define LED_ADDRESS 0x70
 #define RE_ADDRESS 0x20
+
+//#define TEST_MODE 1
 
 typedef struct Element {
   const char* name;
@@ -23,21 +26,50 @@ typedef struct Element {
 
 #define ELEMENTS 5
 
-bool connected = false;
-
 Element elements[] = {
-  // Name           ID   RE address               LED   Min   Max   Inc Dec Wrap
-  {"QNH mmHg",      'Q', i2cEncoderMiniLib(0x20), 0x70, 2600, 3100, 1,  1,  i2cEncoderMiniLib::WRAP_DISABLE},
-  {"Heading °",     'H', i2cEncoderMiniLib(0x23), 0x72, 0,    359,  1,  0,  i2cEncoderMiniLib::WRAP_ENABLE},
-  {"Altitude ft",   'A', i2cEncoderMiniLib(0x24), 0x71, 0,    600,  1,  3,  i2cEncoderMiniLib::WRAP_DISABLE},
-  {"Speed kn",      'S', i2cEncoderMiniLib(0x22), 0x73, 0,    1000, 1,  0,  i2cEncoderMiniLib::WRAP_DISABLE},
-  {"VSpeed 10 fpm", 'V', i2cEncoderMiniLib(0x21), 0x74, -800, 600,  5,  0,  i2cEncoderMiniLib::WRAP_DISABLE},
+  // Name           ID   RE address               LED   Min   Max   Inc Decimal Wrap
+  {"QNH mmHg",      'Q', i2cEncoderMiniLib(0x20), 0x74, 2600, 3100, 1,  1,      i2cEncoderMiniLib::WRAP_DISABLE},
+  {"Heading °",     'H', i2cEncoderMiniLib(0x22), 0x72, 0,    359,  1,  0,      i2cEncoderMiniLib::WRAP_ENABLE},
+  {"Altitude ft",   'A', i2cEncoderMiniLib(0x23), 0x73, 0,    600,  1,  0,      i2cEncoderMiniLib::WRAP_DISABLE},
+  {"Speed kn",      'S', i2cEncoderMiniLib(0x21), 0x70, 0,    1000, 1,  0,      i2cEncoderMiniLib::WRAP_DISABLE},
+  {"VSpeed 10 fpm", 'V', i2cEncoderMiniLib(0x24), 0x71, -800, 600,  5,  0,      i2cEncoderMiniLib::WRAP_DISABLE},
 };
+
+typedef struct Button {
+  const char *name;
+  const char id;
+  byte pin;
+  DebounceEvent *button;
+} Button;
+
+#define BUTTONS 10
+
+Button buttons[] = {
+  // Name ID    Pin
+  {"AP",  'A',  11},
+  {"FD",  'F',  9},
+  {"HDG", 'H',  7},
+  {"ALT", 'L',  5},
+  {"NAV", 'N',  2},
+  {"APR", 'P',  10},
+  {"VNV", 'V',  8},
+  {"VS",  'S',  6},
+  {"FLC", 'C',  4},
+  {"IAS", 'I',  3}
+};
+
+#ifdef TEST_MODE
+  bool connected = true;
+#else
+  bool connected = false;
+#endif
+
+int pos;
 
 void setup() {
   Wire.begin();
   Serial.begin(115200);
-  
+
   for (int i = 0; i < ELEMENTS; i++) {
     Element &e = elements[i];
     e.initialised = false;
@@ -45,6 +77,15 @@ void setup() {
     e.display.printError();
     e.display.writeDisplay();
     setup_encoder(e);
+#ifdef TEST_MODE
+    e.initialised = true;
+    e.disp_val = e.min;
+    update_display(e);
+#endif
+  }
+
+  for (int i = 0; i < BUTTONS; i++) {
+    buttons[i].button = new DebounceEvent(buttons[i].pin, BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP);
   }
 }
 
@@ -57,7 +98,8 @@ void loop() {
 
 void main_loop() {
   read_updates();
-  read_inputs();
+  read_encoders();
+  read_buttons();
 }
 
 void connect() {
@@ -101,7 +143,7 @@ void read_updates() {
   }
 }
 
-void read_inputs() {
+void read_encoders() {
   for (int i = 0; i < ELEMENTS; i++) {
     Element &e = elements[i];
     if (!e.initialised) {
@@ -133,7 +175,18 @@ void read_inputs() {
   Serial.flush();
 }
 
-int pos;
+void read_buttons() {
+  for (int i=0; i < BUTTONS; i++) {
+    unsigned int event = buttons[i].button->loop();
+
+    if (event == EVENT_PRESSED) {
+      Serial.print('B');
+      Serial.println(buttons[i].id);
+    }
+  }
+  Serial.flush();
+}
+
 void update_display(Element &e) {
   int val = e.disp_val;
   bool negative = false;
@@ -180,4 +233,10 @@ int dec_pos() {
     pos--;
   }
   return pos;
+}
+
+void comment(const char *str) {
+  Serial.print('#');
+  Serial.println(str);
+  Serial.flush();
 }

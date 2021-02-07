@@ -1,3 +1,4 @@
+# vim: set tabstop=3 noexpandtab shiftwidth=3 :
 import logging
 import math
 import serial
@@ -29,6 +30,28 @@ elements = [
 	Element('QNH', 				'Q', 'KOHLSMAN_SETTING_HG', 			'KOHLSMAN_SET', 				'', 										lambda x: x*100, 	lambda x: round(((x / 100) * 33.864) * 16)),
 ]
 
+@dataclass
+class Button:
+	name: str
+	id: str
+	event: str
+
+buttons = [
+		Button('AP',  'A',  'AP_MASTER'),
+		Button('FD',  'F',  'TOGGLE_FLIGHT_DIRECTOR'),
+		Button('HDG', 'H',  'AP_PANEL_HEADING_HOLD'),
+		Button('ALT', 'L',  'AP_PANEL_ALTITUDE_HOLD'),
+		Button('NAV', 'N',  'AP_NAV1_HOLD'),
+		Button('APR', 'P',  'AP_APR_HOLD'),
+		Button('VNV', 'V',  'AP_VS_HOLD'), # TODO
+		Button('VS',  'S',  'AP_VS_HOLD'),
+		Button('FLC', 'C',  'FLIGHT_LEVEL_CHANGE'),
+		Button('IAS', 'I',  'AP_PANEL_SPEED_HOLD')
+  ]
+
+
+
+
 # Setup
 def connect_sim(sc):
 	try:
@@ -58,35 +81,48 @@ def read_from_sim_update_panel(var, id, val, modifier):
 
 	new_val = round(modifier(new_val))
 	if new_val != val:
-		print(f'New #{var} of #{new_val} (old: #{val})')
-		ser.write(f'#{id}#{new_val})\r\n'.encode())
+		print(f'New {var} of {new_val} (old: {val})')
+		ser.write(f'{id}{new_val})\r\n'.encode())
 	return new_val
 
 
 # Incoming from AP Panel
 def handle_data(data):
-	print(f'Received #{data}')
+	print(f'Received {data}')
 	cmd = data[0]
 	success = False
-	for e in elements:
-		if cmd == e.id:
-			if data[1] == 'P':
-				val = read_from_sim_update_panel(e.set_from, e.id, e.val, e.set_from_modifier)
-			else:
-				val = read_from_panel(data, e.val)
-			e.val = update_sim_val(val, e.val, e.event, e.update_modifier)
-			success = True
-			break
+	if cmd == 'B':
+		success = handle_button(data[1])
+	elif cmd == '#':
+		success = True
+	else:
+		for e in elements:
+			if cmd == e.id:
+				if data[1] == 'P':
+					val = read_from_sim_update_panel(e.set_from, e.id, e.val, e.set_from_modifier)
+				else:
+					val = read_from_panel(data, e.val)
+				e.val = update_sim_val(val, e.val, e.event, e.update_modifier)
+				success = True
+				break
 
 	if not success:
-		print(f'Unknown command: #{cmd}')
+		print(f'Unknown command: {cmd}')
+
+def handle_button(cmd):
+	for b in buttons:
+		if cmd == b.id:
+			e = ae.find(b.event)
+			e()
+			return True
+	return False
 
 def read_from_panel(data, event):
 	new_val = int(data[1:])
 	return new_val
 
 def update_sim_val(new_val, curr_val, event, modifier):
-	print(f'Updating #{event} from #{curr_val} to #{new_val}')
+	print(f'Updating {event} from {curr_val} to {new_val}')
 	if (new_val != curr_val):
 		sim_val = modifier(new_val)
 		e = ae.find(event)
