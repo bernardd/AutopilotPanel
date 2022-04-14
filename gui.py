@@ -29,8 +29,6 @@ class GUI():
 		palette = QPalette()
 		palette.setColor(QPalette.ColorRole.Base, Qt.GlobalColor.black)
 		palette.setColor(QPalette.ColorRole.Text, Qt.GlobalColor.white)
-		#font = QFont()
-		#font.setStyleHint(QFont.StyleHint.TypeWriter)
 		self.console = QTextEdit()
 		self.console.setFontFamily('Courier')
 		self.console.setPalette(palette)
