@@ -32,26 +32,26 @@ class Button:
 
 class AP(QObject):
 	elements = [
-			#		  Name					ID	  Variable								Event								set_from									read_modifier		update_modifier   set_from_modifier
-			Element('Heading', 			'H', 'AUTOPILOT_HEADING_LOCK_DIR', 	'HEADING_BUG_SET',			'PLANE_HEADING_DEGREES_TRUE',    lambda x: x,		lambda x: x, 		lambda x: math.degrees(x)),
-			Element('Altitude', 			'A', 'AUTOPILOT_ALTITUDE_LOCK_VAR', 'AP_ALT_VAR_SET_ENGLISH', 	'PLANE_ALTITUDE',						lambda x: x/100, 	lambda x: x*100,  lambda x: x/100),
-			Element('Speed', 				'S', 'AUTOPILOT_AIRSPEED_HOLD_VAR', 'AP_SPD_VAR_SET',				'AIRSPEED_INDICATED'),
-			Element('Vertical Speed', 	'V', 'AUTOPILOT_VERTICAL_HOLD_VAR', 'AP_VS_VAR_SET_ENGLISH', 	'', 										lambda x: x/10, 	lambda x: x*10),
+			#		Name				ID		Variable						Event						set_from						read_modifier		update_modifier		set_from_modifier
+			Element('Heading',			'H',	'AUTOPILOT_HEADING_LOCK_DIR',	'HEADING_BUG_SET',			'PLANE_HEADING_DEGREES_TRUE',	lambda x: x,		lambda x: x, 		lambda x: math.degrees(x)),
+			Element('Altitude',			'A',	'AUTOPILOT_ALTITUDE_LOCK_VAR',	'AP_ALT_VAR_SET_ENGLISH',	'PLANE_ALTITUDE',				lambda x: x/100,	lambda x: x*100,	lambda x: x/100),
+			Element('Speed',			'S',	'AUTOPILOT_AIRSPEED_HOLD_VAR',	'AP_SPD_VAR_SET',			'AIRSPEED_INDICATED'),
+			Element('Vertical Speed',	'V',	'AUTOPILOT_VERTICAL_HOLD_VAR',	'AP_VS_VAR_SET_ENGLISH',	'',								lambda x: x/10,		lambda x: x*10),
 			# MSFS's baro, which is only displayed in INHg, is of course in units of 1/16th of a millibar in the API. Because obviously.
-			Element('QNH', 				'Q', 'KOHLSMAN_SETTING_HG', 			'KOHLSMAN_SET', 				'', 										lambda x: x*100, 	lambda x: round(((x / 100) * 33.864) * 16)),
+			Element('QNH',				'Q',	'KOHLSMAN_SETTING_HG',			'KOHLSMAN_SET',				'',								lambda x: x*100,	lambda x: round(((x / 100) * 33.864) * 16)),
 			]
 
 	buttons = [
-			Button('AP',  'A',  'AP_MASTER'),
-			Button('FD',  'F',  'TOGGLE_FLIGHT_DIRECTOR'),
-			Button('HDG', 'H',  'AP_PANEL_HEADING_HOLD'),
-			Button('ALT', 'L',  'AP_PANEL_ALTITUDE_HOLD'),
-			Button('NAV', 'N',  'AP_NAV1_HOLD'),
-			Button('APR', 'P',  'AP_APR_HOLD'),
-			Button('VNV', 'V',  'AP_VS_HOLD'), # TODO
-			Button('VS',  'S',  'AP_VS_HOLD'),
-			Button('FLC', 'C',  'FLIGHT_LEVEL_CHANGE'),
-			Button('IAS', 'I',  'AP_PANEL_SPEED_HOLD')
+			Button('AP',  'A', 'AP_MASTER'),
+			Button('FD',  'F', 'TOGGLE_FLIGHT_DIRECTOR'),
+			Button('HDG', 'H', 'AP_PANEL_HEADING_HOLD'),
+			Button('ALT', 'L', 'AP_PANEL_ALTITUDE_HOLD'),
+			Button('NAV', 'N', 'AP_NAV1_HOLD'),
+			Button('APR', 'P', 'AP_APR_HOLD'),
+			Button('VNV', 'V', 'AP_VS_HOLD'), # TODO
+			Button('VS',  'S', 'AP_VS_HOLD'),
+			Button('FLC', 'C', 'FLIGHT_LEVEL_CHANGE'),
+			Button('IAS', 'I', 'AP_PANEL_SPEED_HOLD')
 			]
 
 	def __init__(self, parent=None):
@@ -84,7 +84,7 @@ class AP(QObject):
 	def connect_device(self):
 		try:
 			if self.ser == None:
-				self.ser = serial.Serial(port='COM3', baudrate=115200, timeout=0.2)
+				self.ser = serial.Serial(port='COM4', baudrate=115200, timeout=0.2)
 
 			self.ser.write(b'C')
 			self.ser.flush()
